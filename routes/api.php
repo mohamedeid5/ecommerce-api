@@ -1,11 +1,12 @@
 <?php
 
-use App\Http\Controllers\Api\V1\Admin\AddressController;
+use App\Http\Controllers\Api\V1\AddressController;
 use App\Http\Controllers\Api\V1\Admin\CategoryController;
 use App\Http\Controllers\Api\V1\Admin\ProductController;
 use App\Http\Controllers\Api\V1\Admin\ProductImageController;
 use App\Http\Controllers\Api\V1\AuthController;
-use App\Http\Controllers\Api\V1\Admin\CartController;
+use App\Http\Controllers\Api\V1\CartController;
+use App\Http\Controllers\Api\V1\OrderController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->group(function () {
@@ -27,6 +28,10 @@ Route::prefix('v1')->group(function () {
         Route::patch('/{address}', [AddressController::class, 'update']);
         Route::delete('/{address}', [AddressController::class, 'destroy']);
         Route::post('/{address}/set-default', [AddressController::class, 'setDefault']);
+    });
+
+    Route::prefix('orders')->middleware(['auth:sanctum', 'cart'])->group(function () {
+        Route::post('/', [OrderController::class, 'store']);
     });
 
     Route::middleware(['auth:sanctum', 'role:admin'])->group(function () {

@@ -14,6 +14,7 @@ class OrderResource extends JsonResource
             'order_number' => $this->order_number,
             'status' => $this->status->value,
             'status_label' => $this->status->label(),
+            'can_cancel' => $this->status->isCancellable(),
 
             'pricing' => [
                 'subtotal' => (float) $this->subtotal,
@@ -38,6 +39,10 @@ class OrderResource extends JsonResource
             'customer_notes' => $this->customer_notes,
             'items' => OrderItemResource::collection($this->whenLoaded('items')),
             'items_count' => $this->whenLoaded('items', fn() => $this->items->sum('quantity')),
+
+            'status_history' => OrderStatusHistoryResource::collection(
+                $this->whenLoaded('statusHistory')
+            ),
 
             'timestamps' => [
                 'placed_at' => $this->placed_at?->toIso8601String(),

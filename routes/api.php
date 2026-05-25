@@ -31,7 +31,11 @@ Route::prefix('v1')->group(function () {
     });
 
     Route::prefix('orders')->middleware(['auth:sanctum', 'cart'])->group(function () {
+        Route::get('/', [OrderController::class, 'index']);
         Route::post('/', [OrderController::class, 'store']);
+        Route::get('/{order}', [OrderController::class, 'show']);
+        Route::post('/{order}/cancel', [OrderController::class, 'cancel']);
+
     });
 
     Route::middleware(['auth:sanctum', 'role:admin'])->group(function () {

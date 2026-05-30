@@ -15,7 +15,7 @@ class OrderListResource extends JsonResource
             'status' => $this->status->value,
             'status_label' => $this->status->label(),
             'total' => (float) $this->total,
-            'items_count' => $this->whenLoaded('items', fn() => $this->items->sum('quantity')),
+            'items_count' => (int) $this->items_count,
             'placed_at' => $this->placed_at?->toIso8601String(),
             'can_cancel' => $this->status->isCancellable(),
         ];

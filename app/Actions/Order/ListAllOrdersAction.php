@@ -2,22 +2,26 @@
 
 namespace App\Actions\Order;
 
-use App\Models\User;
+use App\Models\Order;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 
-class ListUserOrdersAction
+class ListAllOrdersAction
 {
     public function execute(
-        User $user,
-        int $perPage = 10,
         ?string $statusFilter = null,
+        ?string $orderNumber = null,
+        int $perPage = 20,
     ): LengthAwarePaginator {
-        $query = $user->orders()
-            ->withSum('items as items_count', 'quantity')
+        $query = Order::query()
+            ->with(['user:id,name,email', 'items'])
             ->latest('placed_at');
 
         if ($statusFilter) {
             $query->where('status', $statusFilter);
+        }
+
+        if ($orderNumber) {
+            $query->where('order_number', 'like', "%{$orderNumber}%");
         }
 
         return $query->paginate($perPage);

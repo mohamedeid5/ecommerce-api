@@ -29,7 +29,7 @@ class MergeGuestCartAction
 
             foreach ($guestCart->items as $guestItem) {
                 $existingItem = $userCart->items()
-                    ->where('product_id', $guestCart->product_id)
+                    ->where('product_id', $guestItem->product_id)
                     ->first();
 
                 if($existingItem) {

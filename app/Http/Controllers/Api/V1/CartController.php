@@ -10,6 +10,7 @@ use App\Models\CartItem;
 use App\Services\Cart\CartService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 
 class CartController extends BaseApiController
 {
@@ -40,6 +41,8 @@ class CartController extends BaseApiController
 
     public function updateItem(UpdateCartItemRequest $request, CartItem $item): JsonResponse
     {
+        Gate::authorize('update', [$item, $request->attributes->get('cart')]);
+
         $updated = $this->cartService->updateItem($item, $request->integer('quantity'));
 
         return $this->successResponse(new CartItemResource($updated), 'Cart item updated');
@@ -47,6 +50,8 @@ class CartController extends BaseApiController
 
     public function removeItem(Request $request, CartItem $item): JsonResponse
     {
+        Gate::authorize('delete', [$item, $request->attributes->get('cart')]);
+
         $this->cartService->removeItem($item);
 
         return $this->successResponse(null, 'Item removed from cart');

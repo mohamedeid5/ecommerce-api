@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\V1\AddressController;
 use App\Http\Controllers\Api\V1\Admin\CategoryController;
+use App\Http\Controllers\Api\V1\Admin\OrderController as AdminOrderController;
 use App\Http\Controllers\Api\V1\Admin\ProductController;
 use App\Http\Controllers\Api\V1\Admin\ProductImageController;
 use App\Http\Controllers\Api\V1\AuthController;
@@ -12,6 +13,7 @@ use Illuminate\Support\Facades\Route;
 Route::prefix('v1')->group(function () {
     Route::post('/register', [AuthController::class, 'register']);
     Route::post('/login', [AuthController::class, 'login']);
+    Route::post('/logout', [AuthController::class, 'logout'])->middleware('auth:sanctum');
 
     Route::prefix('cart')->middleware('cart')->group(function () {
         Route::get('/', [CartController::class, 'show']);
@@ -39,8 +41,6 @@ Route::prefix('v1')->group(function () {
     });
 
     Route::middleware(['auth:sanctum', 'role:admin'])->group(function () {
-        Route::post('/logout', [AuthController::class, 'logout']);
-
         Route::prefix('admin')->name('admin.')->group(function () {
             Route::apiResource('categories', CategoryController::class);
 
@@ -55,6 +55,12 @@ Route::prefix('v1')->group(function () {
             Route::post('products/{id}/restore', [ProductController::class, 'restore']);
             Route::delete('products/{id}/force-delete', [ProductController::class, 'forceDelete']);
             Route::apiResource('products', ProductController::class);
+
+            Route::prefix('orders')->group(function () {
+                Route::get('/', [AdminOrderController::class, 'index']);
+                Route::get('/{order}', [AdminOrderController::class, 'show']);
+                Route::patch('/{order}/status', [AdminOrderController::class, 'updateStatus']);
+            });
         });
 
     });

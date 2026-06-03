@@ -24,7 +24,7 @@ class Product extends Model
         'sku',
         'sale_price',
         'stock',
-        'is_active',
+        'status',
     ];
 
     protected $casts = [

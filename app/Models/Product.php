@@ -3,17 +3,18 @@
 namespace App\Models;
 
 use App\Enums\ProductStatus;
-use Illuminate\Database\Eloquent\Attributes\ObservedBy;
-use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\SoftDeletes;
-use Spatie\Sluggable\SlugOptions;
-use Spatie\Sluggable\HasSlug;
 use App\Observers\ProductObserver;
+use Illuminate\Database\Eloquent\Attributes\ObservedBy;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
+use Spatie\Sluggable\HasSlug;
+use Spatie\Sluggable\SlugOptions;
+
 #[ObservedBy(ProductObserver::class)]
 class Product extends Model
 {
-    use HasFactory, SoftDeletes, HasSlug;
+    use HasFactory, HasSlug, SoftDeletes;
 
     protected $fillable = [
         'category_id',
@@ -34,7 +35,7 @@ class Product extends Model
         'stock' => 'integer',
     ];
 
-     /**
+    /**
      * Get the options for generating the slug.
      */
     public function getSlugOptions(): SlugOptions
@@ -74,8 +75,8 @@ class Product extends Model
 
     public function scopeSearch($query, $term)
     {
-        return $query->where(function($q) use ($term) {
-             $q->where('name', 'LIKE', "%{$term}%")
+        return $query->where(function ($q) use ($term) {
+            $q->where('name', 'LIKE', "%{$term}%")
                 ->orWhere('description', 'LIKE', "%{$term}%");
         });
 
@@ -88,7 +89,7 @@ class Product extends Model
 
     public function scopeAvailable($query)
     {
-        return $query->where('is_active', ProductStatus::ACTIVE)
+        return $query->where('status', ProductStatus::ACTIVE->value)
             ->where('stock', '>', 0);
     }
 

@@ -6,6 +6,7 @@ use App\Enums\ProductStatus;
 use App\Models\Cart;
 use App\Models\Category;
 use App\Models\Product;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -54,6 +55,28 @@ class CartControllerTest extends TestCase
             'id' => $item->id,
             'cart_id' => $cart->id,
             'quantity' => 2,
+        ]);
+    }
+
+    public function test_authenticated_user_gets_the_same_cart_on_each_request(): void
+    {
+        $user = User::factory()->create();
+        $token = $user->createToken('auth_token')->plainTextToken;
+
+        $this->withToken($token)
+            ->getJson('/api/v1/cart')
+            ->assertOk()
+            ->assertHeaderMissing('X-Cart-Token');
+
+        $this->withToken($token)
+            ->getJson('/api/v1/cart')
+            ->assertOk()
+            ->assertHeaderMissing('X-Cart-Token');
+
+        $this->assertDatabaseCount('carts', 1);
+        $this->assertDatabaseHas('carts', [
+            'user_id' => $user->id,
+            'guest_token' => null,
         ]);
     }
 

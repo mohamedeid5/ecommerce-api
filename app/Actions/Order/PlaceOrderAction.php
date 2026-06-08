@@ -103,7 +103,7 @@ class PlaceOrderAction
 
             $product = $products->get($item->product_id);
 
-            if (!$product || $product->status !== 'active') {
+            if (!$product || $product->status->value !== 'active') {
                 throw new ProductUnavailableException(
                     productName: $product?->name ?? 'Unknown product',
                 );

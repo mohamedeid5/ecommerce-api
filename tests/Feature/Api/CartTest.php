@@ -5,14 +5,13 @@ namespace Tests\Feature\Api;
 use App\Models\Category;
 use App\Models\Product;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Foundation\Testing\WithFaker;
 use Override;
 use Tests\TestCase;
 use Tests\Traits\CreatesRoles;
 
 class CartTest extends TestCase
 {
-    use CreatesRoles;
+    use CreatesRoles, RefreshDatabase;
 
     #[Override]
     public function setUp(): void

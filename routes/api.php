@@ -21,15 +21,21 @@ Route::prefix('v1')->group(function () {
     })->middleware('auth:sanctum');
 
     Route::post('/register', [AuthController::class, 'register']);
-    Route::post('/login', [AuthController::class, 'login']);
-    Route::post('/logout', [AuthController::class, 'logout'])->middleware('auth:sanctum');
+
+    Route::middleware('throttle:auth')->group(function () {
+        Route::post('register', [AuthController::class, 'register']);
+        Route::post('login', [AuthController::class, 'login']);
+    });
 
     Route::get('/products', [ProductController::class, 'index']);
     Route::get('/products/{product}', [ProductController::class, 'show']);
 
-    Route::post('webhooks/payment', [WebhookController::class, 'payment']);
+    Route::middleware('throttle:webhooks')->group(function () {
+        Route::post('webhooks/payment', [WebhookController::class, 'payment']);
+    });
 
-    Route::prefix('cart')->middleware('cart')->group(function () {
+
+    Route::prefix('cart')->middleware(['cart', 'throttle:api'])->group(function () {
         Route::get('/', [CartController::class, 'show']);
         Route::post('/items', [CartController::class, 'addItem']);
         Route::patch('/items/{item}', [CartController::class, 'updateItem']);
@@ -37,25 +43,30 @@ Route::prefix('v1')->group(function () {
         Route::delete('/', [CartController::class, 'clear']);
     });
 
-    Route::prefix('addresses')->middleware('auth:sanctum')->group(function () {
-        Route::get('/', [AddressController::class, 'index']);
-        Route::post('/', [AddressController::class, 'store']);
-        Route::get('/{address}', [AddressController::class, 'show']);
-        Route::patch('/{address}', [AddressController::class, 'update']);
-        Route::delete('/{address}', [AddressController::class, 'destroy']);
-        Route::post('/{address}/set-default', [AddressController::class, 'setDefault']);
+    Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
+
+        Route::prefix('addresses')->group(function () {
+            Route::get('/', [AddressController::class, 'index']);
+            Route::post('/', [AddressController::class, 'store']);
+            Route::get('/{address}', [AddressController::class, 'show']);
+            Route::patch('/{address}', [AddressController::class, 'update']);
+            Route::delete('/{address}', [AddressController::class, 'destroy']);
+            Route::post('/{address}/set-default', [AddressController::class, 'setDefault']);
+        });
+
+        Route::prefix('orders')->group(function () {
+            Route::get('/', [OrderController::class, 'index']);
+            Route::post('/', [OrderController::class, 'store']);
+            Route::get('/{order}', [OrderController::class, 'show']);
+            Route::post('/{order}/cancel', [OrderController::class, 'cancel']);
+        });
     });
 
-    Route::prefix('orders')->middleware(['auth:sanctum', 'cart'])->group(function () {
-        Route::get('/', [OrderController::class, 'index']);
-        Route::post('/', [OrderController::class, 'store']);
-        Route::get('/{order}', [OrderController::class, 'show']);
-        Route::post('/{order}/cancel', [OrderController::class, 'cancel']);
-        Route::post('/{order}/payments', [PaymentController::class, 'initiate']);
-
+    Route::middleware(['auth:sanctum', 'throttle:payments'])->group(function () {
+        Route::post('orders/{order}/payments', [PaymentController::class, 'initiate']);
     });
 
-    Route::middleware(['auth:sanctum', 'role:admin'])->group(function () {
+    Route::middleware(['auth:sanctum', 'role:admin', 'throttle:admin'])->group(function () {
         Route::prefix('admin')->name('admin.')->group(function () {
             Route::apiResource('categories', CategoryController::class);
 

@@ -6,6 +6,7 @@ use App\Enums\OrderStatus;
 use App\Exceptions\Order\EmptyCartException;
 use App\Exceptions\Order\InsufficientStockException;
 use App\Exceptions\Order\ProductUnavailableException;
+use App\Exceptions\Order\TooManyOrdersException;
 use App\Models\Address;
 use App\Models\Cart;
 use App\Models\Order;
@@ -31,6 +32,16 @@ class PlaceOrderAction
 
         $this->validateCartNotEmpty($cart);
         $this->validateAddressBelongsToUser($address, $user);
+
+        $recentOrders = $user->orders()
+            ->where('created_at', now()->subHour())
+            ->count();
+
+        if ($recentOrders > 3) {
+            throw new TooManyOrdersException(
+                'You can only place 3 orders per hour.'
+            );
+        }
 
         return DB::transaction(function () use ($user, $cart, $address, $customerNotes) {
             // Lock products and validate stock

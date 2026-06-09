@@ -29,4 +29,19 @@ class CategoryFactory extends Factory
     {
         return $this->state(['parent_id' => Category::factory()]);
     }
+
+    public function active(): static
+    {
+        return $this->state(['is_active' => true]);
+    }
+
+    public function inactive(): static
+    {
+        return $this->state(['is_active' => false]);
+    }
+
+    public function child(): static
+    {
+        return $this->withParent();
+    }
 }

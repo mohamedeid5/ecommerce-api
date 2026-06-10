@@ -4,6 +4,7 @@ namespace Tests\Feature\Api;
 
 use App\Models\Category;
 use App\Models\Product;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Override;
 use Tests\TestCase;
@@ -79,5 +80,43 @@ class CartTest extends TestCase
         $response->assertStatus(422);
         $response->assertJsonStructure(['message', 'errors']);
 
+    }
+
+    public function test_guest_cart_merges_with_user_cart_on_login(): void
+    {
+        // Arrange
+        Category::factory()->create(['id' => 1]);
+        $product = Product::factory()->create();
+        $user = User::factory()->create();
+
+        // Add item as guest
+        $guestResponse = $this->postJson('/api/v1/cart/items', [
+            'product_id' => $product->id,
+            'quantity' => 2,
+        ]);
+
+        $cartToken = $guestResponse->headers->get('X-Cart-Token');
+
+        // Act: Login with the guest cart token
+        $loginResponse = $this->withHeader('X-Cart-Token', $cartToken)
+            ->postJson('/api/v1/auth/login', [
+                'email' => $user->email,
+                'password' => 'password',
+            ]);
+
+        $token = $loginResponse->json('data.token');
+
+        // Get user's cart
+        $cartResponse = $this->withHeader('Authorization', "Bearer {$token}")
+            ->getJson('/api/v1/cart');
+
+         // Assert
+        $cartResponse->assertStatus(200);
+        $cartResponse->assertJsonPath('data.items.0.product.id', $product->id);
+
+            $this->assertDatabaseHas('cart_items', [
+            'product_id' => $product->id,
+            'quantity' => 2,
+        ]);
     }
 }

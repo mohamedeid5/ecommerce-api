@@ -4,6 +4,8 @@ namespace App\Actions\Payment;
 
 use App\Contracts\Payment\PaymentProviderInterface;
 use App\Enums\OrderStatus;
+use App\Events\PaymentFailed;
+use App\Events\PaymentSucceeded;
 use App\Exceptions\Payment\WebhookException;
 use App\Models\Payment;
 use Illuminate\Support\Facades\DB;
@@ -35,37 +37,55 @@ class ProcessWebhookAction
             throw new WebhookException('Missing required fields');
         }
 
-        // 4. Idempotency check
-        $existing = Payment::where('webhook_event_id', $data['event_id'])->first();
-        if ($existing) {
-            Log::info('Webhook already processed', [
-                'event_id' => $data['event_id'],
-                'payment_id' => $existing->id,
-            ]);
-            return;  // Already processed, safe to ignore
-        }
+        $processedPayment = DB::transaction((function() use ($data) {
 
-        // 5. Find the payment
-        $payment = Payment::where('provider_payment_id', $data['provider_payment_id'])
-            ->first();
+            $payment = Payment::where('provider_payment_id', $data['provider_payment_id'])
+                ->lockForUpdate()
+                ->first();
 
-        if (!$payment) {
-            throw new WebhookException('Payment not found');
-        }
+            if (!$payment) {
+                throw new WebhookException('Payment not found');
+            }
 
-        DB::transaction((function() use ($payment, $data) {
+            if ($payment->webhook_event_id === $data['event_id']) {
+                Log::info('Webhook already processed', [
+                    'event_id' => $data['event_id'],
+                    'payment_id' => $payment->id,
+                ]);
+                return null;
+            }
+
             $this->updatePayment($payment, $data);
 
             if ($data['status'] === 'succeeded') {
-                $this->markOrderAsPaid($payment);
-            } elseif ($data['status'] === 'failed') {
-                $this->markOrderAsFailed($payment);
+                return $this->markOrderAsPaid($payment)
+                    ? $payment->fresh(['order.user'])
+                    : null;
             }
+
+            if ($data['status'] === 'failed') {
+                return $this->markOrderAsFailed($payment)
+                    ? $payment->fresh(['order.user'])
+                    : null;
+            }
+
+            return null;
         }));
 
+        if (!$processedPayment) {
+            return;
+        }
+
+        if ($processedPayment->isSuccessful()) {
+            PaymentSucceeded::dispatch($processedPayment);
+        }
+
+        if ($processedPayment->isFailed()) {
+            PaymentFailed::dispatch($processedPayment);
+        }
     }
 
-    public function updatePayment(Payment $payment, array $data): void
+    private function updatePayment(Payment $payment, array $data): void
     {
         $payment->update([
             'webhook_event_id' => $data['event_id'],
@@ -75,7 +95,7 @@ class ProcessWebhookAction
         ]);
     }
 
-    private function markOrderAsPaid(Payment $payment): void
+    private function markOrderAsPaid(Payment $payment): bool
     {
         $order = $payment->order;
 
@@ -85,7 +105,7 @@ class ProcessWebhookAction
                 'order_id' => $order->id,
                 'current_status' => $order->status->value,
             ]);
-            return;
+            return false;
         }
 
         $previousStatus = $order->status;
@@ -101,14 +121,16 @@ class ProcessWebhookAction
             'changed_by' => null,  // ← system, not a user
             'reason' => "Payment confirmed via webhook (event: {$payment->webhook_event_id})",
         ]);
+
+        return true;
     }
 
-    private function markOrderAsFailed(Payment $payment): void
+    private function markOrderAsFailed(Payment $payment): bool
     {
         $order = $payment->order;
 
         if (!$order->status->canTransitionTo(OrderStatus::FAILED)) {
-            return;
+            return false;
         }
 
         $previousStatus = $order->status;
@@ -123,5 +145,7 @@ class ProcessWebhookAction
             'changed_by' => null,
             'reason' => "Payment failed: {$payment->failure_reason}",
         ]);
+
+        return true;
     }
 }

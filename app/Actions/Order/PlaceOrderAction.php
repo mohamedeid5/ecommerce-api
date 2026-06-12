@@ -3,6 +3,7 @@
 namespace App\Actions\Order;
 
 use App\Enums\OrderStatus;
+use App\Events\OrderPlaced;
 use App\Exceptions\Order\EmptyCartException;
 use App\Exceptions\Order\InsufficientStockException;
 use App\Exceptions\Order\ProductUnavailableException;
@@ -14,6 +15,7 @@ use App\Models\Product;
 use App\Models\User;
 use App\Services\Order\OrderNumberGenerator;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 
 class PlaceOrderAction
@@ -43,35 +45,54 @@ class PlaceOrderAction
             );
         }
 
-        return DB::transaction(function () use ($user, $cart, $address, $customerNotes) {
-            // Lock products and validate stock
-            $products = $this->lockAndValidateProducts($cart);
+        // atomic lock
+        $lockKey = $user
+            ? "user:{$user->id}:place-order"
+            : "cart:{$cart->guest_token}:place-order";
+        $lock = Cache::lock($lockKey, 10);
 
-             // Calculate totals
-            $totals = $this->calculateTotals->execute($cart);
+        if(!$lock->get()) {
+            throw new TooManyOrdersException(
+                'You have another order in progress. Please wait a moment and try again.'
+            );
+        }
 
-             // Create the order (placeholder order_number)
-            $order = $this->createOrder($user, $address, $totals, $customerNotes);
+        try {
+             return DB::transaction(function () use ($user, $cart, $address, $customerNotes) {
+                // Lock products and validate stock
+                $products = $this->lockAndValidateProducts($cart);
 
-            // Generate and save the real order_number
-            $order->update([
-                'order_number' => $this->numberGenerator->generate($order->id),
-            ]);
+                // Calculate totals
+                $totals = $this->calculateTotals->execute($cart);
 
-            // Create order items (snapshot)
-            $this->createOrderItems($order, $cart, $products);
+                // Create the order (placeholder order_number)
+                $order = $this->createOrder($user, $address, $totals, $customerNotes);
 
-             // Decrement stock
-            $this->decrementStock($cart, $products);
+                // Generate and save the real order_number
+                $order->update([
+                    'order_number' => $this->numberGenerator->generate($order->id),
+                ]);
 
-            // Record initial status history
-            $this->recordStatusHistory($order, $user);
+                // Create order items (snapshot)
+                $this->createOrderItems($order, $cart, $products);
 
-            // Clear the cart
-            $cart->items()->delete();
+                // Decrement stock
+                $this->decrementStock($cart, $products);
 
-            return $order->fresh(['items', 'statusHistory']);
-        });
+                // Record initial status history
+                $this->recordStatusHistory($order, $user);
+
+                // Clear the cart
+                $cart->items()->delete();
+
+                OrderPlaced::dispatch($order->fresh(['items', 'user']));
+
+                return $order->fresh(['items', 'statusHistory']);
+            });
+        } finally {
+            $lock->release();
+        }
+
     }
 
 

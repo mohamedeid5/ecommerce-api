@@ -35,21 +35,11 @@ class PlaceOrderAction
         $this->validateCartNotEmpty($cart);
         $this->validateAddressBelongsToUser($address, $user);
 
-        $recentOrders = $user->orders()
-            ->where('created_at', now()->subHour())
-            ->count();
-
-        if ($recentOrders > 3) {
-            throw new TooManyOrdersException(
-                'You can only place 3 orders per hour.'
-            );
-        }
-
         // atomic lock
         $lockKey = $user
             ? "user:{$user->id}:place-order"
             : "cart:{$cart->guest_token}:place-order";
-        $lock = Cache::lock($lockKey, 10);
+        $lock = Cache::lock($lockKey, 60);
 
         if(!$lock->get()) {
             throw new TooManyOrdersException(
@@ -58,6 +48,17 @@ class PlaceOrderAction
         }
 
         try {
+
+             $recentOrders = $user->orders()
+                ->where('created_at', now()->subHour())
+                ->count();
+
+            if ($recentOrders >= 3) {
+                throw new TooManyOrdersException(
+                    'You can only place 3 orders per hour.'
+                );
+            }
+
              return DB::transaction(function () use ($user, $cart, $address, $customerNotes) {
                 // Lock products and validate stock
                 $products = $this->lockAndValidateProducts($cart);
@@ -101,7 +102,7 @@ class PlaceOrderAction
      */
     private function validateCartNotEmpty(Cart $cart): void
     {
-        if ($cart->items->isEmpty()) {
+        if (!$cart->items()->exists()) {
             throw new EmptyCartException();
         }
     }

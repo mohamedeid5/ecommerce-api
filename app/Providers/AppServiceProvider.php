@@ -4,7 +4,7 @@ namespace App\Providers;
 
 use Illuminate\Support\ServiceProvider;
 use App\Contracts\Payment\PaymentProviderInterface;
-use App\Services\Payment\MockPaymentProvider;
+use App\Services\Payment\StripePaymentProvider;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Http\Request;
@@ -18,7 +18,7 @@ class AppServiceProvider extends ServiceProvider
     {
         $this->app->bind(
             PaymentProviderInterface::class,
-            MockPaymentProvider::class,
+            StripePaymentProvider::class,
         );
     }
 

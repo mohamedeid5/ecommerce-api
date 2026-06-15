@@ -19,7 +19,7 @@ class WebhookController extends Controller
     public function payment(Request $request): JsonResponse
     {
         $rawPayload = $request->getContent();
-        $signature = $request->header('X-Webhook-Signature', '');
+        $signature = $request->header('Stripe-Signature', '');
 
         $this->processAction->execute($rawPayload, $signature);
 

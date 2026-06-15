@@ -27,7 +27,7 @@ class InitiatePaymentAction
             $payment = Payment::create([
                 'payment_reference' => 'PENDING',
                 'order_id' => $order->id,
-                'provider' => 'mock',
+                'provider' => 'stripe',
                 'amount' => $order->total,
                 'currency' => 'EGP',
                 'status' => 'pending',

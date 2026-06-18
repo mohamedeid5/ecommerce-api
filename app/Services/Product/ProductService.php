@@ -4,12 +4,8 @@ namespace App\Services\Product;
 
 use App\Actions\Product\UploadProductImagesAction;
 use App\DTOs\Product\ProductDTO;
-use App\Enums\ProductStatus;
 use App\Models\Product;
 use Illuminate\Support\Facades\DB;
-use Spatie\QueryBuilder\AllowedFilter;
-use Spatie\QueryBuilder\QueryBuilder;
-
 class ProductService
 {
     private array $relations = ['category', 'primaryImage', 'galleryImages'];
@@ -17,48 +13,6 @@ class ProductService
     public function __construct(
         private UploadProductImagesAction $uploadImagesAction
     ) {}
-
-    public function getAll(int $perPage = 10)
-    {
-        return QueryBuilder::for(Product::class)
-            ->with($this->relations)
-            ->allowedFilters(
-                'name',
-                AllowedFilter::exact('status'),
-                AllowedFilter::exact('category_id'),
-                AllowedFilter::scope('price_between'),
-                AllowedFilter::scope('in_stock'),
-                AllowedFilter::scope('search'),
-                AllowedFilter::callback('trashed', function ($query, $value) {
-                    if ($value === 'with') {
-                        $query->withTrashed();
-                    }
-                    if ($value === 'only') {
-                        $query->onlyTrashed();
-                    }
-                }),
-            )
-            ->allowedSorts('name', 'price', 'created_at')
-            ->defaultSort('-created_at')
-            ->paginate($perPage);
-    }
-
-    public function getPublicProducts(int $perPage = 10)
-    {
-        return QueryBuilder::for(Product::class)
-            ->where('status', ProductStatus::ACTIVE->value)
-            ->with($this->relations)
-            ->allowedFilters(
-                'name',
-                AllowedFilter::exact('category_id'),
-                AllowedFilter::scope('price_between'),
-                AllowedFilter::scope('in_stock'),
-                AllowedFilter::scope('search'),
-            )
-            ->allowedSorts('name', 'price', 'created_at')
-            ->defaultSort('-created_at')
-            ->paginate($perPage);
-    }
 
     public function createProduct(ProductDTO $dto)
     {

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\V1;
 use App\Enums\ProductStatus;
 use App\Http\Resources\ProductResource;
 use App\Models\Product;
+use App\Queries\ProductQuery;
 use App\Services\Product\ProductService;
 use Illuminate\Http\JsonResponse;
 
@@ -12,11 +13,12 @@ class ProductController extends BaseApiController
 {
     public function __construct(
         private ProductService $productService,
+        protected ProductQuery $productQuery
     ) {}
 
     public function index(): JsonResponse
     {
-        $products = $this->productService->getPublicProducts(10);
+        $products = $this->productQuery->getPublicProducts(10);
 
         return $this->successResponse(
             ProductResource::collection($products),

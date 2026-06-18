@@ -7,6 +7,7 @@ use App\Http\Requests\Product\StoreProductRequest;
 use App\Http\Requests\Product\UpdateProductRequest;
 use App\Http\Resources\ProductResource;
 use App\Models\Product;
+use App\Queries\ProductQuery;
 use App\Services\Product\ProductService;
 use Illuminate\Support\Facades\Gate;
 
@@ -14,7 +15,8 @@ class ProductController extends BaseApiController
 {
 
     public function __construct(
-        protected ProductService $productService
+        protected ProductService $productService,
+        protected ProductQuery $productQuery,
     )
     {}
 
@@ -22,7 +24,7 @@ class ProductController extends BaseApiController
     {
         Gate::authorize('viewAny', Product::class);
 
-        $products = $this->productService->getAll(10);
+        $products = $this->productQuery->getAll(10);
 
         return $this->successResponse(
             ProductResource::collection($products),

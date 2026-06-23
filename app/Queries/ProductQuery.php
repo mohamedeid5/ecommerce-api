@@ -17,34 +17,29 @@ class ProductQuery
 
     public function getAll(int $perPage = 10)
     {
-        $cacheKey = $this->buildListCacheKey('products:admin:list', $perPage);
 
-        return Cache::tags([self::CACHE_TAG])->remember(
-            $cacheKey,
-            self::CACHE_TTL,
-            function() use ($perPage) {
-                return QueryBuilder::for(Product::class)
-                    ->with($this->relations)
-                    ->allowedFilters(
-                        'name',
-                        AllowedFilter::exact('status'),
-                        AllowedFilter::exact('category_id'),
-                        AllowedFilter::scope('price_between'),
-                        AllowedFilter::scope('in_stock'),
-                        AllowedFilter::scope('search'),
-                        AllowedFilter::callback('trashed', function ($query, $value) {
-                            if ($value === 'with') {
-                                $query->withTrashed();
-                            }
-                            if ($value === 'only') {
-                                $query->onlyTrashed();
-                            }
-                        }),
-                    )
-                    ->allowedSorts('name', 'price', 'created_at')
-                    ->defaultSort('-created_at')
-                    ->paginate($perPage);
-        });
+        return QueryBuilder::for(Product::class)
+            ->with($this->relations)
+            ->allowedFilters(
+                'name',
+                AllowedFilter::exact('status'),
+                AllowedFilter::exact('category_id'),
+                AllowedFilter::scope('price_between'),
+                AllowedFilter::scope('in_stock'),
+                AllowedFilter::scope('search'),
+                AllowedFilter::callback('trashed', function ($query, $value) {
+                    if ($value === 'with') {
+                        $query->withTrashed();
+                    }
+                    if ($value === 'only') {
+                        $query->onlyTrashed();
+                    }
+                }),
+            )
+            ->allowedSorts('name', 'price', 'created_at')
+            ->defaultSort('-created_at')
+            ->paginate($perPage);
+
     }
 
     public function getPublicProducts(int $perPage)

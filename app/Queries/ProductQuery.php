@@ -51,7 +51,7 @@ class ProductQuery
     {
         $cacheKey = $this->buildListCacheKey('products:public:list', $perPage);
 
-        return Cache::tags(['products'])->remember(
+        return Cache::tags(self::CACHE_TAG)->remember(
             $cacheKey,
             self::CACHE_TTL,
             function () use ($perPage) {

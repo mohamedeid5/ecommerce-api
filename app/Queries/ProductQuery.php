@@ -44,26 +44,19 @@ class ProductQuery
 
     public function getPublicProducts(int $perPage)
     {
-        $cacheKey = $this->buildListCacheKey('products:public:list', $perPage);
-
-        return Cache::tags([self::CACHE_TAG])->remember(
-            $cacheKey,
-            self::CACHE_TTL,
-            function () use ($perPage) {
-                return QueryBuilder::for(Product::class)
-                ->where('status', ProductStatus::ACTIVE->value)
-                ->with($this->relations)
-                ->allowedFilters(
-                    'name',
-                    AllowedFilter::exact('category_id'),
-                    AllowedFilter::scope('price_between'),
-                    AllowedFilter::scope('in_stock'),
-                    AllowedFilter::scope('search'),
-                )
-                ->allowedSorts('name', 'price', 'created_at')
-                ->defaultSort('-created_at')
-                ->paginate($perPage);
-            });
+        return QueryBuilder::for(Product::class)
+            ->where('status', ProductStatus::ACTIVE->value)
+            ->with($this->relations)
+            ->allowedFilters(
+                'name',
+                AllowedFilter::exact('category_id'),
+                AllowedFilter::scope('price_between'),
+                AllowedFilter::scope('in_stock'),
+                AllowedFilter::scope('search'),
+            )
+            ->allowedSorts('name', 'price', 'created_at')
+            ->defaultSort('-created_at')
+            ->paginate($perPage);
     }
 
     private function buildListCacheKey(string $prefix, int $perPage): string

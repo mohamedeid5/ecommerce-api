@@ -32,7 +32,7 @@ class ProductDTO
             stock: $request->validated('stock'),
             sku: $request->validated('sku'),
             status: $request->validated('status'),
-            primaryImage: $request->validated('primary_image'),
+            primaryImage: ProductStatus::tryFrom($request->validated('primary_image')),
             galleryImages: $request->validated('gallery_images'),
         );
     }

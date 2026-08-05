@@ -12,7 +12,6 @@ use App\Http\Controllers\Api\V1\BaseApiController;
 use App\Http\Requests\Category\UpdateCategoryRequest;
 use App\Http\Resources\CategoryResource;
 use App\Models\Category;
-use Exception;
 
 class CategoryController extends BaseApiController
 {

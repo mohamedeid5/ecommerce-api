@@ -11,6 +11,5 @@ class GetCategoriesAction
         return Category::with(['parent', 'products'])
             ->latest()
             ->get();
-
     }
 }

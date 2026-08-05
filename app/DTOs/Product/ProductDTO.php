@@ -18,7 +18,6 @@ class ProductDTO
         public readonly ?ProductStatus $status,
         public readonly ?UploadedFile $primaryImage = null,
         public readonly ?array $galleryImages = null,
-
     ){}
 
     public static function fromRequest($request): self

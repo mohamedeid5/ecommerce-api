@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\V1\AddressController;
 use App\Http\Controllers\Api\V1\Admin\CategoryController;
+use App\Http\Controllers\Api\V1\Admin\CouponController;
 use App\Http\Controllers\Api\V1\Admin\OrderController as AdminOrderController;
 use App\Http\Controllers\Api\V1\Admin\ProductController as AdminProductController;
 use App\Http\Controllers\Api\V1\Admin\ProductImageController;
@@ -87,6 +88,8 @@ Route::prefix('v1')->group(function () {
                 Route::get('/{order}', [AdminOrderController::class, 'show']);
                 Route::patch('/{order}/status', [AdminOrderController::class, 'updateStatus']);
             });
+
+            Route::apiResource('coupons', CouponController::class);
         });
 
     });

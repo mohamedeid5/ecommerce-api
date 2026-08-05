@@ -14,7 +14,14 @@ class UploadPrimaryImageRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'image' => ['required', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
+            'image' => [
+                'required',
+                'image',
+                'mimes:jpg,jpeg,png,webp',
+                'extensions:jpg,jpeg,png,webp',
+                'dimensions:min_width=100,min_height=100,max_width=4000,max_height=4000',
+                'max:2048'
+            ],
         ];
     }
 }
